@@ -7,7 +7,8 @@ import {
     RectangleStackIcon,
 } from "@heroicons/react/24/solid";
 import {Home, Profile, Users, Notifications, Posts} from "@/pages/dashboard";
-import {SignIn, SignUp} from "@/pages/auth";
+import {SignIn} from "@/pages/auth";
+import {SignUp} from "@/pages/auth/sign-up component/signUp";
 import Forum from "/src/pages/user/forum.jsx"
 import Reports from "/src/pages/dashboard/reports.jsx"
 import DetailPost from "/src/pages/user/detailPost.jsx"
@@ -94,7 +95,7 @@ export const routes = [
                 name: "sign up",
                 path: "/sign-up",
                 element: <SignUp/>,
-            },
+            }
         ],
     },
     {
