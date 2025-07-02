@@ -29,8 +29,7 @@ import {
   StarIcon,
 } from "@heroicons/react/24/outline"
 import "./styles.css";
-import { Link, useNavigate } from "react-router-dom";
-
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 // Mock data for course categories
 const mockCategories = [
@@ -115,23 +114,10 @@ const mockCourses = [
   },
 ]
 
-const mockUser = {
-  userId: 1,
-  fullName: "Tran My Linh",
-  password: "abc12345",
-  email: "huytdnhe180756@fpt.edu.vn",
-  birthDate: "01/01/2000",
-  role: "USER",
-  createdAt: "19/06/2025 11:58",
-  status: "Active",
-  reportCount: 0,
-  imageUrl:
-    "https://cdnphoto.dantri.com.vn/Au8icunjIdjAao2SrF0OZWJkRO8=/thumb_w/1360/2025/05/26/jack1-1748272770861.jpg",
-}
-
 export default function CourseDetailPage({ courseId = 1 }) {
   // State management
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [user, setUser] = useState(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourse, setSelectedCourse] = useState(null)
   const [relatedCourses, setRelatedCourses] = useState([])
@@ -139,19 +125,41 @@ export default function CourseDetailPage({ courseId = 1 }) {
   const [openUpdateModal, setOpenUpdateModal] = useState(false)
   const [openPasswordModal, setOpenPasswordModal] = useState(false)
   const [formData, setFormData] = useState({
-    fullName: mockUser.fullName,
-    birthDate: "2000-01-01",
-    imageUrl: mockUser.imageUrl,
+    fullName: "",
+    birthDate: "",
+    imageUrl: "",
   })
   const [passwordData, setPasswordData] = useState({
     oldPassword: "",
     newPassword: "",
   })
-    const navigate = useNavigate();
+  const navigate = useNavigate();
+  const location = useLocation();
 
+  // Function to load user from sessionStorage
+  const loadUserFromSession = () => {
+    const userData = sessionStorage.getItem("user");
+    if (userData) {
+      const parsedUser = JSON.parse(userData);
+      setIsLoggedIn(true);
+      setUser(parsedUser);
+      setFormData({
+        fullName: parsedUser.name,
+        birthDate: "",
+        imageUrl: "",
+      });
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+    }
+  };
 
-  // Load course details and related courses
+  // Load user and course details on mount and after navigation
   useEffect(() => {
+    // Load user from session
+    loadUserFromSession();
+
+    // Load course details
     const course = mockCourses.find((c) => c.courseId === courseId && c.status)
     setSelectedCourse(course)
 
@@ -162,7 +170,12 @@ export default function CourseDetailPage({ courseId = 1 }) {
         .slice(0, 3)
       setRelatedCourses(related)
     }
-  }, [courseId])
+  }, [courseId]) // Include courseId to re-run if courseId changes
+
+  // Re-check sessionStorage after navigation
+  useEffect(() => {
+    loadUserFromSession();
+  }, [location.pathname]) // Re-run when the route changes
 
   // Get category name by categoryId
   const getCategoryName = (categoryId) => {
@@ -211,14 +224,15 @@ export default function CourseDetailPage({ courseId = 1 }) {
     setPasswordData((prev) => ({ ...prev, [name]: value }))
   }
 
-  // Mock handlers
-  const handleLogin = () => setIsLoggedIn(true)
-  const handleLogout = () => setIsLoggedIn(false)
-  const handleRegister = () => {
-    console.log("Register clicked");
-    navigate("/auth/sign-up");
-
+  // Handlers
+  const handleLogin = () => navigate("/auth/sign-in")
+  const handleLogout = () => {
+    sessionStorage.removeItem("user");
+    setIsLoggedIn(false);
+    setUser(null);
+    navigate("/auth/sign-in");
   }
+  const handleRegister = () => navigate("/auth/sign-up")
   const handleUpdateProfile = () => {
     console.log("Profile updated:", formData)
     setOpenUpdateModal(false)
@@ -302,7 +316,7 @@ export default function CourseDetailPage({ courseId = 1 }) {
                   <Menu>
                     <MenuHandler>
                       <Button variant="text" className="flex items-center gap-2 p-2">
-                        <Avatar src={mockUser.imageUrl} alt={mockUser.fullName} size="sm" variant="circular" />
+                        <Avatar src={user?.imageUrl || "/placeholder.svg"} alt={user?.name} size="sm" variant="circular" />
                         <ChevronDownIcon className="h-4 w-4" />
                       </Button>
                     </MenuHandler>
@@ -406,7 +420,7 @@ export default function CourseDetailPage({ courseId = 1 }) {
                 <Menu>
                   <MenuHandler>
                     <Button variant="text" className="flex items-center gap-2 p-2">
-                      <Avatar src={mockUser.imageUrl} alt={mockUser.fullName} size="sm" variant="circular" />
+                      <Avatar src={user?.imageUrl || "/placeholder.svg"} alt={user?.name} size="sm" variant="circular" />
                       <ChevronDownIcon className="h-4 w-4" />
                     </Button>
                   </MenuHandler>
@@ -619,20 +633,20 @@ export default function CourseDetailPage({ courseId = 1 }) {
         </DialogHeader>
         <DialogBody className="text-center p-6">
           <Avatar
-            src={mockUser.imageUrl}
-            alt={mockUser.fullName}
+            src={user?.imageUrl || "/placeholder.svg"}
+            alt={user?.name}
             size="xxl"
             variant="circular"
             className="mb-4 mx-auto"
           />
           <Typography variant="h4" color="blue-gray" className="mb-2">
-            {mockUser.fullName}
+            {user?.name}
           </Typography>
           <Typography variant="small" color="blue-gray" className="mb-2">
-            {mockUser.email}
+            {user?.email}
           </Typography>
           <Typography variant="small" color="gray" className="mb-6">
-            Birth Date: {mockUser.birthDate}
+            Birth Date: {formData.birthDate || "Not set"}
           </Typography>
 
           <div className="flex justify-center space-x-4">

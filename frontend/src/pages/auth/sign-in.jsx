@@ -4,19 +4,106 @@ import {
   Checkbox,
   Button,
   Typography,
+  Dialog,
+  DialogHeader,
+  DialogBody,
+  DialogFooter,
 } from "@material-tailwind/react";
-import { Link } from "react-router-dom";
-
+import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export function SignIn() {
+  const [formData, setFormData] = useState({
+    email: "",
+    password: "",
+  });
+  const [agreeTerms, setAgreeTerms] = useState(false);
+  const [openForgotPassword, setOpenForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState("");
+  const navigate = useNavigate();
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleForgotEmailChange = (e) => {
+    setForgotEmail(e.target.value);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!agreeTerms) {
+      toast.error("Vui lòng đồng ý với Điều khoản và Điều kiện");
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:8081/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+      const data = await response.text();
+      if (response.ok && data.startsWith("Login successful! Welcome ")) {
+        const userName = data.split("Welcome ")[1];
+        sessionStorage.setItem("user", JSON.stringify({
+          email: formData.email,
+          name: userName,
+        }));
+        toast.success("Đăng nhập thành công!");
+        setTimeout(() => {
+          navigate("/dashboard");
+        }, 2000);
+      } else {
+        toast.error(data || "Đăng nhập thất bại");
+      }
+    } catch (err) {
+      toast.error("Lỗi kết nối đến server");
+    }
+  };
+
+  const handleForgotPassword = async () => {
+    if (!forgotEmail) {
+      toast.error("Vui lòng nhập email");
+      return;
+    }
+    try {
+      const response = await fetch(`http://localhost:8081/api/users/forgot-password?email=${(forgotEmail)}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+      if (response.ok) {
+        toast.success("Đã gửi email đổi mật khẩu!");
+        setOpenForgotPassword(false);
+        setForgotEmail("");
+      } else {
+        const errorData = await response.text();
+        toast.error(errorData || "Có lỗi xảy ra khi gửi email");
+      }
+    } catch (err) {
+      toast.error("Lỗi kết nối đến server");
+    }
+  };
+
   return (
     <section className="m-8 flex gap-4">
       <div className="w-full lg:w-3/5 mt-24">
         <div className="text-center">
           <Typography variant="h2" className="font-bold mb-4">Sign In</Typography>
-          <Typography variant="paragraph" color="blue-gray" className="text-lg font-normal">Enter your email and password to Sign In.</Typography>
+          <Typography variant="paragraph" color="blue-gray" className="text-lg font-normal">
+            Enter your email and password to Sign In.
+          </Typography>
         </div>
-        <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2">
+        <form className="mt-8 mb-2 mx-auto w-80 max-w-screen-lg lg:w-1/2" onSubmit={handleSubmit}>
           <div className="mb-1 flex flex-col gap-6">
             <Typography variant="small" color="blue-gray" className="-mb-3 font-medium">
               Your email
@@ -24,6 +111,9 @@ export function SignIn() {
             <Input
               size="lg"
               placeholder="name@mail.com"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
               className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
               labelProps={{
                 className: "before:content-none after:content-none",
@@ -36,6 +126,9 @@ export function SignIn() {
               type="password"
               size="lg"
               placeholder="********"
+              name="password"
+              value={formData.password}
+              onChange={handleChange}
               className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
               labelProps={{
                 className: "before:content-none after:content-none",
@@ -43,6 +136,8 @@ export function SignIn() {
             />
           </div>
           <Checkbox
+            checked={agreeTerms}
+            onChange={(e) => setAgreeTerms(e.target.checked)}
             label={
               <Typography
                 variant="small"
@@ -60,7 +155,7 @@ export function SignIn() {
             }
             containerProps={{ className: "-ml-2.5" }}
           />
-          <Button className="mt-6" fullWidth>
+          <Button className="mt-6" fullWidth type="submit">
             Sign In
           </Button>
 
@@ -78,9 +173,13 @@ export function SignIn() {
               containerProps={{ className: "-ml-2.5" }}
             />
             <Typography variant="small" className="font-medium text-gray-900">
-              <a href="#">
+              <button
+                type="button"
+                onClick={() => setOpenForgotPassword(true)}
+                className="hover:underline"
+              >
                 Forgot Password
-              </a>
+              </button>
             </Typography>
           </div>
           <div className="space-y-4 mt-8">
@@ -110,7 +209,7 @@ export function SignIn() {
             <Link to="/auth/sign-up" className="text-gray-900 ml-1">Create account</Link>
           </Typography>
         </form>
-
+        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} style={{ zIndex: 10000 }}/>
       </div>
       <div className="w-2/5 h-full hidden lg:block">
         <img
@@ -119,6 +218,44 @@ export function SignIn() {
         />
       </div>
 
+      {/* Forgot Password Dialog */}
+      <Dialog open={openForgotPassword} handler={() => setOpenForgotPassword(false)} size="sm">
+        <DialogHeader>Quên Mật Khẩu</DialogHeader>
+        <DialogBody>
+          <Typography variant="paragraph" color="blue-gray" className="mb-4">
+            Nhập email của bạn để nhận liên kết đổi mật khẩu.
+          </Typography>
+          <Input
+            size="lg"
+            placeholder="name@mail.com"
+            value={forgotEmail}
+            onChange={handleForgotEmailChange}
+            className=" !border-t-blue-gray-200 focus:!border-t-gray-900"
+            labelProps={{
+              className: "before:content-none after:content-none",
+            }}
+          />
+        </DialogBody>
+        <DialogFooter>
+          <Button
+            variant="text"
+            color="red"
+            onClick={() => {
+              setOpenForgotPassword(false);
+              setForgotEmail("");
+            }}
+            className="mr-2"
+          >
+            Hủy
+          </Button>
+          <Button
+            color="green"
+            onClick={handleForgotPassword}
+          >
+            Gửi Email Đổi Mật Khẩu
+          </Button>
+        </DialogFooter>
+      </Dialog>
     </section>
   );
 }
