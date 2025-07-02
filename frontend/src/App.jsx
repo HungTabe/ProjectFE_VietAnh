@@ -3,6 +3,7 @@ import {Dashboard, Auth, User} from "@/layouts";
 import UserDetail from "@/pages/dashboard/userDetail.jsx";
 import CoursePage from "@/pages/user/course-page/course-page";
 import CourseDetailPage from "@/pages/user/course-page/course-detail-page/course-detail-page";
+import ResetPassword from "./pages/auth/reset-password component/ResetPassword";
 
 
 
@@ -14,7 +15,9 @@ function App() {
             <Route path="/user/*" element={<User/>}/>
             <Route path="/test" element={<CoursePage/>}/>
             <Route path="/test2" element={<CourseDetailPage/>}/>
+            <Route path="/api/users/reset-password" element={<ResetPassword />} />
             <Route path="*" element={<Navigate to="/dashboard/home" replace/>}/>
+
         </Routes>
     );
 }

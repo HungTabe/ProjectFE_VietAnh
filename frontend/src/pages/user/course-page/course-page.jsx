@@ -198,7 +198,10 @@ export function CoursePage() {
   }
 
   // Mock handlers
-  const handleLogin = () => setIsLoggedIn(true)
+  const handleLogin = () =>  {
+    setIsLoggedIn(true);
+    navigate("/auth/sign-in")
+  }
   const handleLogout = () => setIsLoggedIn(false)
  const handleRegister = () => {
     console.log("Register clicked");
